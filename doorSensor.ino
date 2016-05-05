@@ -6,18 +6,20 @@ int ledPin = D7;
 
 // Door sensor 
 int doorSensorPin = D2; 
-int doorSensorVal = LOW;
-int doorPrevSensorVal = LOW; 
+int doorSensorVal = HIGH;
 int doorOpenValue = LOW;
 
 // PIR Sensor
 int pirSensorPin = D0; 
 int pirSensorVal = LOW;
+int pirMotionValue = HIGH;
 
-// Time variable
-unsigned long timeOn;
-unsigned long timeOff;
-#define WAIT_TIME_BTW_EVTS 6050
+
+
+
+#define TIME_BTW_WEBHOOK_TRIGGERS 7 // A user by default may trigger a hook up to 10 times per minute for every device that is registered to their account
+#define TIME_TO_LEAVE_LIGHT_ON 10 // The amount of time to leave the light on after it's been turned on. 
+
 
 // Runs once when the device starts up. 
 void setup() {
@@ -50,30 +52,21 @@ void checkPirSensor ()
     // Read the value from the PIR motion sensor.  
     pirSensorVal = digitalRead(pirSensorPin);
 
-    // If the state of the door has changed and the door is open.
-    if ((pirPrevSensorVal != pirSensorVal) && (pirPrevSensorVal == pirSensorVal))
-    {
-        changKitchenLightState(true);
-    }
-    
-    // Save the previous state, so we can detect changes.  
-    doorPrevSensorVal = doorSensorVal;
+    changKitchenLightState (pirSensorVal == pirMotionValue);
 }
 
 // Read the current door sensor value and determine if we need to turn the light on. 
 void checkDoorSensor() {
     // Read the value from the door sensor. 
     doorSensorVal = digitalRead(doorSensorPin); 
-    
-    // If the state of the door has changed and the door is open.
-    if ((doorPrevSensorVal != doorSensorVal) && (doorPrevSensorVal == doorOpenValue))
-    {
-        changKitchenLightState(true);
-    }
-    
-    // Save the previous state, so we can detect changes.  
-    doorPrevSensorVal = doorSensorVal;
+
+    changKitchenLightState (doorSensorVal == doorOpenValue);
 }
+
+// Time variable
+int timeKitchenWebhookTriggerSent_On = 0;
+int timeKitchenWebhookTriggerSent_Off = 0;
+
 
 // Change the state of the kitchen light. 
 void changKitchenLightState (bool lightsOn) {
@@ -91,4 +84,18 @@ void changKitchenLightState (bool lightsOn) {
         // publish the event that will trigger our Webhook
         Particle.publish("turn-kitchen-light-off", NULL, 60, PRIVATE);
     }
+}
+
+bool isKitchenLightOn (){
+    return false; 
+}
+
+bool hasEnoughTimePassedToTurnLightOff (int lastTimeLightWasTurnedOn)
+{
+    return ((Time.now() - lastTimeLightWasTurnedOn) > TIME_TO_LEAVE_LIGHT_ON); 
+}
+
+bool hasEnoughTimePassedToSendWebhookTrigger (int timeSinceLastTrigger)
+{
+    return ((Time.now() - timeSinceLastTrigger) > TIME_BTW_WEBHOOK_TRIGGERS); 
 }
