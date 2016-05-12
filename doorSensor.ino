@@ -26,12 +26,14 @@ void setup() {
     pinMode(ledPin, OUTPUT);
     digitalWrite(ledPin, LOW);
 
+    // Set door sensor to INPUT. 
     pinMode(doorSensorPin, INPUT_PULLDOWN); 
     
     // Turn power on to the door sensor. 
     pinMode(powerPin, OUTPUT); 
     digitalWrite(powerPin, HIGH);
 
+    // Set PIR pin to INPUT. 
     pinMode(pirSensorPin, INPUT_PULLDOWN);
 }
 
@@ -56,8 +58,8 @@ void checkDoorSensor() {
     changKitchenLightState (digitalRead(doorSensorPin) == DOOR_VALUE_WHEN_OPEN);
 }
 
-
-// Change the state of the kitchen light. Publishs the appropriate particle event to trigger the lights to change state. 
+// Change the state of the kitchen light.
+// Publishs the appropriate particle event to trigger the lights to change state. 
 void changKitchenLightState (bool lightsOn) {
     if (lightsOn)
     {
@@ -81,12 +83,16 @@ void changKitchenLightState (bool lightsOn) {
     }
 }
 
+// Once the lights come on they should stay on for set amount of time. 
+// This function will tell the caller whether or not enough time has passed to turn the lights off. 
 bool hasEnoughTimePassedToTurnLightOff (int lastTimeLightWasTurnedOn)
 {
     return ((Time.now() - lastTimeLightWasTurnedOn) > TIME_TO_LEAVE_LIGHT_ON); 
 }
 
-bool hasEnoughTimePassedToPublishWebhookTrigger  (int timeSinceLastTrigger)
+// A user by default may trigger a webook up to 10 times per minute for every device that is registered to their account.
+// This function will tell the caller whether or not enough time has passed to trigger a webhook. 
+bool hasEnoughTimePassedToPublishWebhookTrigger  (int timeSinceLastTriggerWasPublished)
 {
-    return ((Time.now() - timeSinceLastTrigger) > TIME_BTW_WEBHOOK_TRIGGERS); 
+    return ((Time.now() - timeSinceLastTriggerWasPublished) > TIME_BTW_WEBHOOK_TRIGGERS); 
 }
