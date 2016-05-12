@@ -1,4 +1,4 @@
-// Power pin used for the PIR sensor
+// Power pin used for the door sensor
 int powerPin = D1; 
 
 // Built-in LED 
@@ -10,13 +10,14 @@ int doorSensorPin = D2;
 // PIR Sensor signal pin 
 int pirSensorPin = D0; 
 
-// Time variable
+// Time variables
 int timeKitchenWebhookTriggerSent_On = 0; 
 int timeKitchenWebhookTriggerSent_Off = 0; 
+int timeKitchenLightOn = 0; 
 
 
 #define TIME_BTW_WEBHOOK_TRIGGERS 7 // A user by default may trigger a hook up to 10 times per minute for every device that is registered to their account
-#define TIME_TO_LEAVE_LIGHT_ON 10 // The amount of time to leave the light on after it's been turned on. 
+#define TIME_TO_LEAVE_LIGHT_ON 60 // The amount of time (seconds) to leave the light on after it's been turned on. 
 #define PIR_VALUE_WHEN_MOTION_DETECTED HIGH
 #define DOOR_VALUE_WHEN_OPEN LOW
 
@@ -63,24 +64,27 @@ void checkDoorSensor() {
 void changKitchenLightState (bool lightsOn) {
     if (lightsOn)
     {
+        timeKitchenLightOn = Time.now();
         if (hasEnoughTimePassedToPublishWebhookTrigger (timeKitchenWebhookTriggerSent_On))
         {
-            digitalWrite(ledPin, HIGH);
+            //digitalWrite(ledPin, HIGH);
 
             // publish the event that will trigger our Webhook
             Particle.publish("turn-kitchen-light-on", NULL, 60, PRIVATE);
             timeKitchenWebhookTriggerSent_On = Time.now();
         }
-        else if (lightsOn == false && 
-                 hasEnoughTimePassedToTurnLightOff(timeKitchenWebhookTriggerSent_On) && 
-                 hasEnoughTimePassedToPublishWebhookTrigger (timeKitchenWebhookTriggerSent_Off)) // Off  
-        {
-            digitalWrite(ledPin, LOW);
-            // publish the event that will trigger our Webhook
-            Particle.publish("turn-kitchen-light-off", NULL, 60, PRIVATE);
-            timeKitchenWebhookTriggerSent_Off = Time.now();
-        }
+        
     }
+    else if (hasEnoughTimePassedToTurnLightOff(timeKitchenLightOn) && 
+             hasEnoughTimePassedToPublishWebhookTrigger (timeKitchenWebhookTriggerSent_Off)) // Off  
+    {
+        // digitalWrite(ledPin, LOW);
+        // publish the event that will trigger our Webhook
+        Particle.publish("turn-kitchen-light-off", NULL, 60, PRIVATE);
+        timeKitchenWebhookTriggerSent_Off = Time.now();
+    }
+
+
 }
 
 // Once the lights come on they should stay on for set amount of time. 
